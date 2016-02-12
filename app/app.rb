@@ -13,6 +13,12 @@ class Bookmark < Sinatra::Base
   set :session_secret, 'super secret'
   register Sinatra::Flash
 
+  helpers do
+    def current_user
+      @current_user ||= User.get(session[:user_id])
+    end
+  end
+
   get '/link' do
     @link = Link.all
     erb :index
@@ -56,12 +62,21 @@ class Bookmark < Sinatra::Base
       end
   end
 
-  helpers do
-    def current_user
-      @current_user ||= User.get(session[:user_id])
+    get '/signin' do
+      erb :signin
     end
 
-end
+    post '/signin' do
+      user = User.authenticate(params[:email], params[:password])
+      if user
+        session[:user_id] = user.id
+        redirect to('/link')
+      else
+        flash.now[:errors] = ['The email or password is incorrect']
+        erb :'signin'
+      end
+
+    end
 
   # start the server if ruby file executed directly
   run! if app_file == $0
